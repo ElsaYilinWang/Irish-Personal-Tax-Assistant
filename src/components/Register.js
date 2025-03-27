@@ -3,13 +3,15 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
 
-function Login() {
+function Register() {
   const [formData, setFormData] = useState({
+    username: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
-  const { login, loading } = useAuth();
+  const { register, loading } = useAuth();
   const navigate = useNavigate();
   
   const handleChange = (e) => {
@@ -31,6 +33,10 @@ function Login() {
   const validateForm = () => {
     const newErrors = {};
     
+    if (!formData.username) {
+      newErrors.username = 'Username is required';
+    }
+    
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -39,6 +45,14 @@ function Login() {
     
     if (!formData.password) {
       newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
     
     setErrors(newErrors);
@@ -49,7 +63,7 @@ function Login() {
     e.preventDefault();
     
     if (validateForm()) {
-      const success = await login(formData.email, formData.password);
+      const success = await register(formData.username, formData.email, formData.password);
       if (success) {
         navigate('/');
       }
@@ -59,10 +73,24 @@ function Login() {
   return (
     <div className="auth-container">
       <div className="auth-form-container">
-        <h1>Login</h1>
-        <p>Please log in to access your tax information.</p>
+        <h1>Register</h1>
+        <p>Create an account to access the Irish Personal Tax Assistant.</p>
         
         <form onSubmit={handleSubmit} className="auth-form">
+          <div className="form-group">
+            <label htmlFor="username">Username</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              placeholder="Enter your username"
+              className={errors.username ? 'error' : ''}
+            />
+            {errors.username && <div className="error-message">{errors.username}</div>}
+          </div>
+          
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -91,19 +119,33 @@ function Login() {
             {errors.password && <div className="error-message">{errors.password}</div>}
           </div>
           
+          <div className="form-group">
+            <label htmlFor="confirmPassword">Confirm Password</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              placeholder="Confirm your password"
+              className={errors.confirmPassword ? 'error' : ''}
+            />
+            {errors.confirmPassword && <div className="error-message">{errors.confirmPassword}</div>}
+          </div>
+          
           <button type="submit" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Registering...' : 'Register'}
           </button>
           
           {loading && <LoadingSpinner />}
         </form>
         
         <div className="auth-links">
-          <p>Don't have an account? <Link to="/register">Register</Link></p>
+          <p>Already have an account? <Link to="/login">Login</Link></p>
         </div>
       </div>
     </div>
   );
 }
 
-export default Login;
+export default Register;
