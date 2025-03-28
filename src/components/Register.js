@@ -63,9 +63,10 @@ function Register() {
     e.preventDefault();
     
     if (validateForm()) {
-      const success = await register(formData.username, formData.email, formData.password);
-      if (success) {
-        navigate('/');
+      const result = await register(formData.username, formData.email, formData.password);
+      if (result.success) {
+        // Redirect to verification page with email
+        navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
       }
     }
   };
@@ -117,6 +118,9 @@ function Register() {
               className={errors.password ? 'error' : ''}
             />
             {errors.password && <div className="error-message">{errors.password}</div>}
+            <div className="password-requirements">
+              Password must be at least 6 characters long
+            </div>
           </div>
           
           <div className="form-group">
@@ -133,11 +137,14 @@ function Register() {
             {errors.confirmPassword && <div className="error-message">{errors.confirmPassword}</div>}
           </div>
           
-          <button type="submit" disabled={loading}>
-            {loading ? 'Registering...' : 'Register'}
+          <button type="submit" disabled={loading} className="auth-button">
+            {loading ? (
+              <>
+                <LoadingSpinner size="small" />
+                <span>Registering...</span>
+              </>
+            ) : 'Register'}
           </button>
-          
-          {loading && <LoadingSpinner />}
         </form>
         
         <div className="auth-links">

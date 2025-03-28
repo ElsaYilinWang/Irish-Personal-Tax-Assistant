@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
           setToken(storedToken);
           // Fetch current user data from the backend
           const userData = await authAPI.getCurrentUser();
-          setCurrentUser(userData.data);
+          setCurrentUser(userData.user);
         } catch (error) {
           console.error('Error fetching user data:', error);
           // If token is invalid or expired, clear it
@@ -55,15 +55,15 @@ export const AuthProvider = ({ children }) => {
       setToken(response.token);
 
       // Set current user
-      setCurrentUser(response.data.user);
+      setCurrentUser(response.user);
 
-      toast.success('Registration successful!');
-      return true;
+      toast.success(response.message || 'Registration successful! Please verify your email.');
+      return { success: true, user: response.user };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
+      const errorMessage = error.message || 'Registration failed. Please try again.';
       toast.error(errorMessage);
       console.error('Registration error:', error);
-      return false;
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
@@ -82,15 +82,21 @@ export const AuthProvider = ({ children }) => {
       setToken(response.token);
 
       // Set current user
-      setCurrentUser(response.data.user);
+      setCurrentUser(response.user);
 
       toast.success('Login successful!');
-      return true;
+      
+      // Check if email is verified
+      if (response.user && !response.user.isVerified) {
+        toast.warning('Please verify your email address to access all features.');
+      }
+      
+      return { success: true, user: response.user };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Invalid email or password';
+      const errorMessage = error.message || 'Invalid email or password';
       toast.error(errorMessage);
       console.error('Login error:', error);
-      return false;
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
@@ -107,6 +113,80 @@ export const AuthProvider = ({ children }) => {
 
     toast.info('You have been logged out.');
   };
+  
+  // Update user data
+  const updateUser = (userData) => {
+    setCurrentUser(userData);
+  };
+  
+  // Verify email
+  const verifyEmail = async (email, code) => {
+    try {
+      setLoading(true);
+      const response = await authAPI.verifyEmail(email, code);
+      
+      if (response.success && currentUser) {
+        // Update user verification status
+        setCurrentUser({
+          ...currentUser,
+          isVerified: true
+        });
+      }
+      
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error.message || 'Email verification failed';
+      console.error('Email verification error:', error);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Resend verification code
+  const resendVerification = async (email) => {
+    try {
+      setLoading(true);
+      const response = await authAPI.resendVerification(email);
+      return { success: true, message: response.message };
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to resend verification code';
+      console.error('Resend verification error:', error);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Request password reset
+  const requestPasswordReset = async (email) => {
+    try {
+      setLoading(true);
+      const response = await authAPI.requestPasswordReset(email);
+      return { success: true, message: response.message };
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to request password reset';
+      console.error('Password reset request error:', error);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Reset password
+  const resetPassword = async (email, code, newPassword) => {
+    try {
+      setLoading(true);
+      const response = await authAPI.resetPassword(email, code, newPassword);
+      return { success: true, message: response.message };
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to reset password';
+      console.error('Password reset error:', error);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Context value
   const value = {
@@ -116,7 +196,13 @@ export const AuthProvider = ({ children }) => {
     register,
     login,
     logout,
-    isAuthenticated: !!currentUser
+    updateUser,
+    verifyEmail,
+    resendVerification,
+    requestPasswordReset,
+    resetPassword,
+    isAuthenticated: !!currentUser,
+    isVerified: currentUser ? currentUser.isVerified : false
   };
 
   return (

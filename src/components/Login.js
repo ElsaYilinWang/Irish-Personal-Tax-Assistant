@@ -49,10 +49,32 @@ function Login() {
     e.preventDefault();
     
     if (validateForm()) {
-      const success = await login(formData.email, formData.password);
-      if (success) {
-        navigate('/');
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
+        // If user is not verified, redirect to verification page
+        if (result.user && !result.user.isVerified) {
+          navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+        } else {
+          // Otherwise go to dashboard
+          navigate('/');
+        }
       }
+    }
+  };
+  
+  const handleForgotPassword = () => {
+    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+      setErrors({
+        ...errors,
+        email: 'Please enter a valid email to reset your password'
+      });
+      return;
+    }
+    
+    if (formData.email) {
+      navigate(`/forgot-password?email=${encodeURIComponent(formData.email)}`);
+    } else {
+      navigate('/forgot-password');
     }
   };
   
@@ -89,13 +111,25 @@ function Login() {
               className={errors.password ? 'error' : ''}
             />
             {errors.password && <div className="error-message">{errors.password}</div>}
+            <div className="forgot-password">
+              <button 
+                type="button" 
+                className="text-btn"
+                onClick={handleForgotPassword}
+              >
+                Forgot Password?
+              </button>
+            </div>
           </div>
           
-          <button type="submit" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+          <button type="submit" disabled={loading} className="auth-button">
+            {loading ? (
+              <>
+                <LoadingSpinner size="small" />
+                <span>Logging in...</span>
+              </>
+            ) : 'Login'}
           </button>
-          
-          {loading && <LoadingSpinner />}
         </form>
         
         <div className="auth-links">

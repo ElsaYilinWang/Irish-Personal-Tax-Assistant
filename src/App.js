@@ -12,8 +12,11 @@ import { AuthProvider } from './context/AuthContext';
 import Register from './components/Register';
 import Profile from './components/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
+import VerifyEmail from './components/VerifyEmail';
+import ForgotPassword from './components/ForgotPassword';
 import './styles/DocumentUpload.css';
 import './styles/TaxForm.css';
+import './styles/VerifyEmail.css';
 
 function App() {
   return (
@@ -30,6 +33,8 @@ function App() {
               } />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/tax-form" element={
                 <ProtectedRoute>
                   <TaxForm />
