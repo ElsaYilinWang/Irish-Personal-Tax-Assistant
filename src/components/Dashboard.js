@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
+import { taxAPI } from '../utils/api';
 import LoadingSpinner from './LoadingSpinner';
 
 function Dashboard() {
@@ -9,6 +11,77 @@ function Dashboard() {
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        // Fetch real data from API
+        const deadlinesPromise = taxAPI.getTaxDeadlines();
+        const progressPromise = taxAPI.getTaxProgress();
+        
+        // If user is authenticated, fetch their tax returns
+        let taxReturnsPromise = Promise.resolve([]);
+        if (currentUser && currentUser.id) {
+          taxReturnsPromise = taxAPI.getUserTaxReturns(currentUser.id);
+        }
+        
+        // Wait for all promises to resolve
+        const [deadlinesResponse, progressResponse, taxReturnsResponse] = await Promise.allSettled([
+          deadlinesPromise,
+          progressPromise,
+          taxReturnsPromise
+        ]);
+        
+        // Process deadlines
+        if (deadlinesResponse.status === 'fulfilled') {
+          setDeadlines(deadlinesResponse.value || []);
+        } else {
+          console.error('Error fetching deadlines:', deadlinesResponse.reason);
+          // Fallback to mock data if API fails
+          setDeadlines(mockDeadlines);
+        }
+        
+        // Process progress
+        if (progressResponse.status === 'fulfilled') {
+          setProgress(progressResponse.value || 0);
+        } else {
+          console.error('Error fetching progress:', progressResponse.reason);
+          // Fallback to mock data if API fails
+          setProgress(65);
+        }
+        
+        // Process tax returns
+        if (taxReturnsResponse.status === 'fulfilled' && taxReturnsResponse.value) {
+          // Transform tax returns into summaries
+          const summaries = taxReturnsResponse.value.map(tax => ({
+            id: tax._id,
+            year: tax.year,
+            summary: `Total Tax Paid: €${tax.totalTaxLiability?.toFixed(2) || '0.00'}`,
+            amount: tax.totalTaxLiability || 0
+          }));
+          
+          setTaxSummaries(summaries.length > 0 ? summaries : mockTaxSummaries);
+        } else {
+          console.error('Error fetching tax returns:', taxReturnsResponse.reason);
+          // Fallback to mock data if API fails
+          setTaxSummaries(mockTaxSummaries);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        toast.error('Failed to load some dashboard data. Using sample data instead.');
+        // Fallback to mock data
+        setTaxSummaries(mockTaxSummaries);
+        setDeadlines(mockDeadlines);
+        setProgress(65);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [currentUser]);
 
   // Mock data for demonstration
   const mockTaxSummaries = [
@@ -22,29 +95,6 @@ function Dashboard() {
     { date: '2023-12-15', description: 'Capital Gains Tax Payment Deadline' },
     { date: '2024-01-31', description: 'Tax Payment Deadline for Self-Assessed Income Tax' }
   ];
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      setLoading(true);
-      try {
-        const userId = '67e5bebdc739b45f12cc95cc'; // Replace with a valid user ID
-        
-        // In a real application, these would be actual API calls
-        // For now, we'll use mock data after a simulated delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        setTaxSummaries(mockTaxSummaries);
-        setDeadlines(mockDeadlines);
-        setProgress(65); // 65% progress as an example
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
 
   // Format date to display in a more readable format
   const formatDate = (dateString) => {
@@ -60,13 +110,30 @@ function Dashboard() {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
+  
+  // Handle button clicks
+  const handleContinueFiling = () => {
+    navigate('/tax-form');
+  };
+  
+  const handleViewTaxDetails = (taxId, year) => {
+    if (taxId) {
+      navigate(`/tax-form?id=${taxId}`);
+    } else {
+      navigate(`/tax-form?year=${year}`);
+    }
+  };
+  
+  const handleAddDocument = () => {
+    navigate('/documents');
+  };
 
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h1>Welcome to CáinSábháil</h1>
         <p>Your Irish Personal Tax Assistant Dashboard</p>
-        {currentUser && <h2>Hello, {currentUser.username}!</h2>}
+        {currentUser && <h2>Hello, {currentUser.username || 'there'}!</h2>}
       </div>
 
       {loading ? (
@@ -85,7 +152,12 @@ function Dashboard() {
               <div className="progress-text">{progress}% Complete</div>
             </div>
             <div className="progress-actions">
-              <button className="continue-btn">Continue Filing</button>
+              <button 
+                className="continue-btn"
+                onClick={handleContinueFiling}
+              >
+                Continue Filing
+              </button>
             </div>
           </div>
 
@@ -100,13 +172,26 @@ function Dashboard() {
                       <div className="summary-details">
                         <div className="summary-text">{summary.summary}</div>
                         <div className="summary-actions">
-                          <button className="view-details-btn">View Details</button>
+                          <button 
+                            className="view-details-btn"
+                            onClick={() => handleViewTaxDetails(summary.id, summary.year)}
+                          >
+                            View Details
+                          </button>
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="no-data">No tax summaries available</div>
+                  <div className="no-data">
+                    <p>No tax summaries available</p>
+                    <button 
+                      className="action-btn"
+                      onClick={handleContinueFiling}
+                    >
+                      Create Your First Tax Return
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -124,6 +209,22 @@ function Dashboard() {
                         <div className="deadline-countdown">
                           {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Due today!'}
                         </div>
+                        {daysRemaining < 30 && (
+                          <div className="deadline-actions">
+                            <button 
+                              className="action-btn"
+                              onClick={handleContinueFiling}
+                            >
+                              Prepare Filing
+                            </button>
+                            <button 
+                              className="action-btn secondary"
+                              onClick={handleAddDocument}
+                            >
+                              Upload Documents
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -140,14 +241,32 @@ function Dashboard() {
               <div className="tip">
                 <h3>Pension Contributions</h3>
                 <p>Maximize your tax relief by contributing to a pension fund. Contributions are deductible at your marginal rate of tax.</p>
+                <button 
+                  className="learn-more-btn"
+                  onClick={() => window.open('https://www.revenue.ie/en/jobs-and-pensions/pensions/tax-relief-for-pension-contributions.aspx', '_blank')}
+                >
+                  Learn More
+                </button>
               </div>
               <div className="tip">
                 <h3>Medical Expenses</h3>
                 <p>Don't forget to claim tax relief on medical expenses at 20%. Keep all receipts for doctor visits, prescribed medicines, and hospital charges.</p>
+                <button 
+                  className="learn-more-btn"
+                  onClick={() => window.open('https://www.revenue.ie/en/personal-tax-credits-reliefs-and-exemptions/health-and-age/health-expenses/index.aspx', '_blank')}
+                >
+                  Learn More
+                </button>
               </div>
               <div className="tip">
                 <h3>Work from Home Relief</h3>
                 <p>If you work from home, you may be eligible for tax relief on expenses like electricity, heating, and broadband.</p>
+                <button 
+                  className="learn-more-btn"
+                  onClick={() => window.open('https://www.revenue.ie/en/jobs-and-pensions/tax-relief-for-expenses/e-working-and-home-workers-relief.aspx', '_blank')}
+                >
+                  Learn More
+                </button>
               </div>
             </div>
           </div>
