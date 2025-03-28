@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { calculateTax } from '../utils/taxCalculator';
+import { useAuth } from '../context/AuthContext';
+import { taxAPI } from '../utils/api';
 import LoadingSpinner from './LoadingSpinner';
 
 function TaxForm() {
@@ -13,16 +14,40 @@ function TaxForm() {
   
   const [taxResults, setTaxResults] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [calculating, setCalculating] = useState(false);
+  const { currentUser } = useAuth();
   
-  // Calculate tax in real-time when form data changes
+  // Calculate tax when form data changes
   useEffect(() => {
-    // Always calculate tax results, even with empty values
-    const results = calculateTax(
-      formData.income || 0,
-      formData.deductions || 0,
-      formData.taxCredits || 0
-    );
-    setTaxResults(results);
+    const calculateTaxFromAPI = async () => {
+      // Don't make API calls if all fields are empty
+      if (!formData.income && !formData.deductions && !formData.taxCredits) {
+        setTaxResults(null);
+        return;
+      }
+      
+      setCalculating(true);
+      try {
+        const results = await taxAPI.calculateTax(
+          formData.income || 0,
+          formData.deductions || 0,
+          formData.taxCredits || 0
+        );
+        setTaxResults(results);
+      } catch (error) {
+        console.error('Error calculating tax:', error);
+        toast.error('Failed to calculate tax. Please try again.');
+      } finally {
+        setCalculating(false);
+      }
+    };
+    
+    // Use a debounce to avoid making too many API calls
+    const debounceTimer = setTimeout(() => {
+      calculateTaxFromAPI();
+    }, 500);
+    
+    return () => clearTimeout(debounceTimer);
   }, [formData]);
   
   const handleChange = (e) => {
@@ -38,9 +63,13 @@ function TaxForm() {
     setLoading(true);
     
     try {
-      // Here you would normally send the data to your backend
-      // For now, we'll just simulate a network request
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Save tax return to the backend
+      await taxAPI.saveTaxReturn({
+        income: Number(formData.income) || 0,
+        deductions: Number(formData.deductions) || 0,
+        taxCredits: Number(formData.taxCredits) || 0,
+        year: Number(formData.year)
+      });
       
       toast.success('Tax information saved successfully!');
     } catch (error) {
@@ -109,12 +138,12 @@ function TaxForm() {
             </select>
           </div>
           
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading || calculating}>
             {loading ? 'Saving...' : 'Save Tax Information'}
           </button>
         </form>
         
-        {loading && <LoadingSpinner />}
+        {(loading || calculating) && <LoadingSpinner />}
         
         {taxResults && (
           <div className="tax-results">

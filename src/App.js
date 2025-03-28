@@ -7,11 +7,12 @@ import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import TaxForm from './components/TaxForm';
 import Navigation from './components/Navigation';
-import Documents from './components/Documents';
+import DocumentUpload from './components/DocumentUpload';
 import { AuthProvider } from './context/AuthContext';
 import Register from './components/Register';
 import Profile from './components/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
+import './styles/DocumentUpload.css';
 
 function App() {
   return (
@@ -35,7 +36,7 @@ function App() {
               } />
               <Route path="/documents" element={
                 <ProtectedRoute>
-                  <Documents />
+                  <DocumentUpload />
                 </ProtectedRoute>
               } />
               <Route path="/profile" element={

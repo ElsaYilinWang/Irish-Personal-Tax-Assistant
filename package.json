@@ -10,6 +10,7 @@
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.8.4",
+    "irish-tax-assistant-frontend": "file:",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-redux": "^7.2.0",
