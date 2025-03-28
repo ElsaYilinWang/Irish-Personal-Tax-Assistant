@@ -24,7 +24,7 @@ function DocumentUpload() {
     setLoading(true);
     try {
       const response = await taxAPI.getUserDocuments();
-      setDocuments(response);
+      setDocuments(response || []);
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast.error('Failed to load documents');
@@ -118,6 +118,17 @@ function DocumentUpload() {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
   
+  // Helper function to get document icon based on file type
+  const getDocumentIcon = (fileType) => {
+    if (!fileType) return '📎'; // Default icon if file type is undefined
+    
+    if (fileType.includes('pdf')) return '📄';
+    if (fileType.includes('word') || fileType.includes('doc')) return '📝';
+    if (fileType.includes('excel') || fileType.includes('sheet')) return '📊';
+    if (fileType.includes('image')) return '🖼️';
+    return '📎'; // Default icon for other file types
+  };
+  
   return (
     <div className="document-upload-container">
       <h1>Document Management</h1>
@@ -187,17 +198,14 @@ function DocumentUpload() {
               {documents.map((doc) => (
                 <div key={doc.id} className="document-item">
                   <div className="document-icon">
-                    {doc.fileType.includes('pdf') ? '📄' :
-                     doc.fileType.includes('word') ? '📝' :
-                     doc.fileType.includes('excel') ? '📊' :
-                     doc.fileType.includes('image') ? '🖼️' : '📎'}
+                    {getDocumentIcon(doc.fileType)}
                   </div>
                   <div className="document-details">
-                    <div className="document-name">{doc.fileName}</div>
+                    <div className="document-name">{doc.fileName || 'Unnamed Document'}</div>
                     <div className="document-meta">
-                      <span className="document-type">{doc.documentType}</span>
-                      <span className="document-size">{formatFileSize(doc.fileSize)}</span>
-                      <span className="document-date">{formatDate(doc.uploadDate)}</span>
+                      <span className="document-type">{doc.documentType || 'Unknown'}</span>
+                      {doc.fileSize && <span className="document-size">{formatFileSize(doc.fileSize)}</span>}
+                      {doc.uploadDate && <span className="document-date">{formatDate(doc.uploadDate)}</span>}
                     </div>
                   </div>
                   <div className="document-actions">
