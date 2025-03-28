@@ -1,0 +1,5 @@
+[
+  {"_id":{"$oid":"67e5bebdc739b45f12cc95cc"},"username":"alice.wonderland","email":"alice.w@example.com","password":"hashed_password_alice"},
+  {"_id":{"$oid":"67e5bebdc739b45f12cc95cd"},"username":"bob.thebuilder","email":"bob.b@example.com","password":"hashed_password_bob"},
+  {"_id":{"$oid":"67e5bebdc739b45f12cc95ce"},"username":"charlie.brown","email":"charlie.b@example.com","password":"hashed_password_charlie"}
+]

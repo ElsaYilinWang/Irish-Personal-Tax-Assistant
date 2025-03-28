@@ -1,0 +1,27 @@
+[
+  {
+    "userId": "67e5bebdc739b45f12cc95cc",
+    "documentType": "W-2",
+    "url": "https://example.com/documents/alice_w2_2023.pdf"
+  },
+  {
+    "userId": "67e5bebdc739b45f12cc95cc",
+    "documentType": "1099-DIV",
+    "url": "https://example.com/documents/alice_1099_2023.pdf"
+  },
+  {
+    "userId": "67e5bebdc739b45f12cc95cd",
+    "documentType": "W-2",
+    "url": "https://example.com/documents/bob_w2_2023.pdf"
+  },
+  {
+    "userId": "67e5bebdc739b45f12cc95ce",
+    "documentType": "W-2",
+    "url": "https://example.com/documents/charlie_w2_2024.pdf"
+  },
+  {
+    "userId": "67e5bebdc739b45f12cc95cc",
+    "documentType": "Driver's License",
+    "url": "https://example.com/documents/alice_license.jpg"
+  }
+]

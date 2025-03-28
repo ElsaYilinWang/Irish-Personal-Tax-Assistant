@@ -1,0 +1,30 @@
+[
+  {
+    "userId": "67e5bebdc739b45f12cc95cc",
+    "income": 75000,
+    "deductions": 12000,
+    "taxCredits": 3000,
+    "year": 2023
+  },
+  {
+    "userId": "67e5bebdc739b45f12cc95cc",
+    "income": 80000,
+    "deductions": 15000,
+    "taxCredits": 3500,
+    "year": 2024
+  },
+  {
+    "userId": "67e5bebdc739b45f12cc95cd",
+    "income": 50000,
+    "deductions": 5000,
+    "taxCredits": 1000,
+    "year": 2023
+  },
+  {
+    "userId": "67e5bebdc739b45f12cc95ce",
+    "income": 90000,
+    "deductions": 20000,
+    "taxCredits": 4000,
+    "year": 2024
+  }
+]
