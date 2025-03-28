@@ -1,8 +1,8 @@
 /* Global Stylesheet */
 
 :root {
-  --primary-color: #2c3e50;
-  --secondary-color: #2980b9;
+  --primary-color: #006400;  /* Dark green - representing Irish identity */
+  --secondary-color: #4B9E47; /* Lighter green - complementary to primary */
   --font-family: 'Roboto', sans-serif;
 }
 
@@ -59,6 +59,36 @@ nav a {
 
 nav a.active {
   font-weight: bold;
+}
+
+/* Logo Styles */
+.logo a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: white;
+}
+
+.nav-logo {
+  height: 40px;
+  width: auto;
+  margin-right: 10px;
+  border-radius: 4px;
+}
+
+.logout-nav-btn {
+  background-color: transparent;
+  border: 1px solid white;
+  color: white;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: 10px;
+}
+
+.logout-nav-btn:hover {
+  background-color: white;
+  color: var(--primary-color);
 }
 
 /* App Layout */
@@ -518,4 +548,215 @@ input:checked + .slider:before {
 .setting-description {
   font-size: 12px;
   color: #666;
+}
+
+/* Dashboard Styles */
+.dashboard-container {
+  padding: 20px;
+}
+
+.dashboard-header {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.dashboard-header h1 {
+  color: var(--primary-color);
+  margin-bottom: 10px;
+}
+
+.dashboard-header p {
+  color: #666;
+  font-size: 18px;
+}
+
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dashboard-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.dashboard-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  flex: 1;
+  min-width: 300px;
+}
+
+.dashboard-card h2 {
+  color: var(--primary-color);
+  margin-bottom: 20px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+.tax-progress-card {
+  background-color: #f9f9f9;
+}
+
+.progress-container {
+  margin: 20px 0;
+}
+
+.progress-bar {
+  height: 20px;
+  background-color: #eee;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--secondary-color);
+  border-radius: 10px;
+  transition: width 0.5s ease;
+}
+
+.progress-text {
+  text-align: center;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.progress-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.continue-btn {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.continue-btn:hover {
+  background-color: var(--secondary-color);
+}
+
+.tax-summaries, .deadlines {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.summary-item, .deadline-item {
+  display: flex;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  padding: 15px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.summary-year {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--primary-color);
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.summary-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.summary-text {
+  font-weight: bold;
+}
+
+.summary-actions, .deadline-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.view-details-btn {
+  background-color: var(--secondary-color);
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.deadline-item {
+  flex-direction: column;
+}
+
+.deadline-date {
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.deadline-description {
+  margin: 5px 0;
+}
+
+.deadline-countdown {
+  font-size: 14px;
+  color: #666;
+}
+
+.deadline-item.urgent .deadline-countdown {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+.tips-card {
+  background-color: #f0f7f0;
+}
+
+.tips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.tip {
+  flex: 1;
+  min-width: 250px;
+  background-color: white;
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tip h3 {
+  color: var(--secondary-color);
+  margin-bottom: 10px;
+}
+
+.no-data {
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Responsive Dashboard */
+@media (max-width: 768px) {
+  .dashboard-row {
+    flex-direction: column;
+  }
+  
+  .tips-container {
+    flex-direction: column;
+  }
 }

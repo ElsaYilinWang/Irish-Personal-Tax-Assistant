@@ -16,14 +16,13 @@ function TaxForm() {
   
   // Calculate tax in real-time when form data changes
   useEffect(() => {
-    if (formData.income) {
-      const results = calculateTax(
-        formData.income,
-        formData.deductions,
-        formData.taxCredits
-      );
-      setTaxResults(results);
-    }
+    // Always calculate tax results, even with empty values
+    const results = calculateTax(
+      formData.income || 0,
+      formData.deductions || 0,
+      formData.taxCredits || 0
+    );
+    setTaxResults(results);
   }, [formData]);
   
   const handleChange = (e) => {
