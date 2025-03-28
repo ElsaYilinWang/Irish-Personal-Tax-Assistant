@@ -1,59 +1,138 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
-// Ensure uploads directory exists
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Load environment variables
+const UPLOAD_DIR = process.env.UPLOAD_DIR || 'uploads';
+const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024; // Default 10MB
+const ALLOWED_FILE_TYPES = (process.env.ALLOWED_FILE_TYPES || 'application/pdf,image/jpeg,image/png').split(',');
+
+// Create upload directory if it doesn't exist
+const createUploadDir = (userId) => {
+  const userDir = path.join(UPLOAD_DIR, userId);
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR);
+  }
+  if (!fs.existsSync(userDir)) {
+    fs.mkdirSync(userDir, { recursive: true });
+  }
+  return userDir;
+};
 
 // Configure storage
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Create user-specific directory if it doesn't exist
-    const userDir = path.join(uploadDir, req.userId.toString());
-    if (!fs.existsSync(userDir)) {
-      fs.mkdirSync(userDir, { recursive: true });
+  destination: (req, file, cb) => {
+    if (!req.user || !req.user.id) {
+      return cb(new Error('User not authenticated'), null);
     }
+    
+    const userDir = createUploadDir(req.user.id);
     cb(null, userDir);
   },
-  filename: function (req, file, cb) {
-    // Create a unique filename with original extension
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+  filename: (req, file, cb) => {
+    // Generate a secure random filename to prevent path traversal attacks
+    const randomName = crypto.randomBytes(16).toString('hex');
+    const fileExt = path.extname(file.originalname);
+    const safeFileName = `${randomName}${fileExt}`;
+    
+    // Store original filename in file object for reference
+    file.originalFilename = file.originalname;
+    file.secureFilename = safeFileName;
+    
+    cb(null, safeFileName);
   }
 });
 
-// File filter to only allow certain file types
+// File filter to validate file types
 const fileFilter = (req, file, cb) => {
-  // Accept only PDF, images, and common document formats
-  const allowedFileTypes = [
-    'application/pdf',
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  ];
-  
-  if (allowedFileTypes.includes(file.mimetype)) {
+  if (ALLOWED_FILE_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only PDF, images, and Office documents are allowed.'), false);
+    cb(new Error(`Invalid file type. Allowed types: ${ALLOWED_FILE_TYPES.join(', ')}`), false);
   }
 };
 
-// Configure multer
-const upload = multer({ 
+// Initialize upload middleware
+const upload = multer({
   storage: storage,
-  fileFilter: fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB max file size
-  }
+    fileSize: MAX_FILE_SIZE
+  },
+  fileFilter: fileFilter
 });
 
-module.exports = upload;
+// Middleware to handle file upload errors
+const handleUploadErrors = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: `File size exceeds the limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB`
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: `Upload error: ${err.message}`
+    });
+  }
+  
+  if (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  }
+  
+  next();
+};
+
+// Middleware to validate user access to files
+const validateFileAccess = async (req, res, next) => {
+  try {
+    const { fileId } = req.params;
+    
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized access'
+      });
+    }
+    
+    // Get the document from the database
+    const Document = require('../models/Document');
+    const document = await Document.findById(fileId);
+    
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+    
+    // Check if the user owns the document
+    if (document.userId.toString() !== req.user.id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to access this file'
+      });
+    }
+    
+    // Add document to request for later use
+    req.document = document;
+    next();
+  } catch (error) {
+    console.error('Error validating file access:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while validating file access'
+    });
+  }
+};
+
+module.exports = {
+  upload,
+  handleUploadErrors,
+  validateFileAccess,
+  UPLOAD_DIR
+};

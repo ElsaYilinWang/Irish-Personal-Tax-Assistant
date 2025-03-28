@@ -5,7 +5,7 @@ const User = require('../models/User');
 const TaxReturn = require('../models/TaxReturn');
 const Document = require('../models/Document');
 const auth = require('../middleware/auth');
-const upload = require('../middleware/upload');
+const { upload, handleUploadErrors, validateFileAccess, UPLOAD_DIR } = require('../middleware/upload');
 
 /**
  * @route   GET /api/tax/calculate
@@ -323,7 +323,7 @@ router.get('/progress', auth, async (req, res, next) => {
  * @desc    Upload a tax-related document
  * @access  Private
  */
-router.post('/document', auth, upload.single('document'), async (req, res, next) => {
+router.post('/document', auth, upload.single('document'), handleUploadErrors, async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -391,26 +391,26 @@ router.get('/documents', auth, async (req, res, next) => {
  * @desc    Download a document
  * @access  Private
  */
-router.get('/document/:id', auth, async (req, res, next) => {
+router.get('/document/:id', auth, validateFileAccess, async (req, res, next) => {
   try {
-    const document = await Document.findById(req.params.id);
+    const document = req.document;
+    const filePath = document.filePath;
     
-    if (!document) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Document not found' 
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        message: 'File not found on server'
       });
     }
     
-    // Ensure user can only access their own documents
-    if (document.userId.toString() !== req.userId.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Access denied. You can only access your own documents.' 
-      });
-    }
+    // Set appropriate headers for file download
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(document.fileName)}"`);
+    res.setHeader('Content-Type', document.fileType);
     
-    res.download(document.filePath, document.fileName);
+    // Stream the file to the response
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
   } catch (error) {
     next(error);
   }
@@ -421,37 +421,22 @@ router.get('/document/:id', auth, async (req, res, next) => {
  * @desc    Delete a document
  * @access  Private
  */
-router.delete('/document/:id', auth, async (req, res, next) => {
+router.delete('/document/:id', auth, validateFileAccess, async (req, res, next) => {
   try {
-    const document = await Document.findById(req.params.id);
+    const document = req.document;
+    const filePath = document.filePath;
     
-    if (!document) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Document not found' 
-      });
+    // Delete file from filesystem
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
     }
     
-    // Ensure user can only delete their own documents
-    if (document.userId.toString() !== req.userId.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Access denied. You can only delete your own documents.' 
-      });
-    }
+    // Delete document from database
+    await Document.findByIdAndDelete(document._id);
     
-    // Delete the file from the filesystem
-    const fs = require('fs');
-    if (fs.existsSync(document.filePath)) {
-      fs.unlinkSync(document.filePath);
-    }
-    
-    // Delete the document from the database
-    await Document.deleteOne({ _id: document._id });
-    
-    res.status(200).json({ 
-      success: true, 
-      message: 'Document deleted successfully' 
+    res.status(200).json({
+      success: true,
+      message: 'Document deleted successfully'
     });
   } catch (error) {
     next(error);
