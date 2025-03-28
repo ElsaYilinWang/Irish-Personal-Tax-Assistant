@@ -15,6 +15,9 @@ function TaxForm() {
   const [taxResults, setTaxResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showDeductionsGuide, setShowDeductionsGuide] = useState(false);
+  const [showTaxCreditsGuide, setShowTaxCreditsGuide] = useState(false);
   const { currentUser } = useAuth();
   
   // Calculate tax when form data changes
@@ -80,67 +83,252 @@ function TaxForm() {
     }
   };
   
+  const nextStep = () => {
+    if (currentStep < 3) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+  
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+  
+  const toggleDeductionsGuide = () => {
+    setShowDeductionsGuide(!showDeductionsGuide);
+  };
+  
+  const toggleTaxCreditsGuide = () => {
+    setShowTaxCreditsGuide(!showTaxCreditsGuide);
+  };
+  
+  // Render step 1: Income Information
+  const renderStep1 = () => {
+    return (
+      <div className="step-content">
+        <h2>Step 1: Income Information</h2>
+        <p>Enter your total annual income from all sources.</p>
+        
+        <div className="form-group">
+          <label htmlFor="income">Annual Income (€)</label>
+          <input
+            type="number"
+            id="income"
+            name="income"
+            value={formData.income}
+            onChange={handleChange}
+            placeholder="Enter your annual income"
+            required
+          />
+          <div className="form-help">
+            Include all sources of income: salary, self-employment, rental income, etc.
+          </div>
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="year">Tax Year</label>
+          <select
+            id="year"
+            name="year"
+            value={formData.year}
+            onChange={handleChange}
+          >
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+          </select>
+        </div>
+        
+        <div className="step-navigation">
+          <button type="button" className="next-btn" onClick={nextStep}>
+            Next: Deductions
+          </button>
+        </div>
+      </div>
+    );
+  };
+  
+  // Render step 2: Deductions
+  const renderStep2 = () => {
+    return (
+      <div className="step-content">
+        <h2>Step 2: Deductions</h2>
+        <p>Enter your eligible tax deductions.</p>
+        
+        <div className="form-group">
+          <div className="label-with-help">
+            <label htmlFor="deductions">Deductions (€)</label>
+            <button 
+              type="button" 
+              className="help-btn" 
+              onClick={toggleDeductionsGuide}
+            >
+              {showDeductionsGuide ? 'Hide Guide' : 'Show Guide'}
+            </button>
+          </div>
+          
+          <input
+            type="number"
+            id="deductions"
+            name="deductions"
+            value={formData.deductions}
+            onChange={handleChange}
+            placeholder="Enter your deductions"
+          />
+          
+          {showDeductionsGuide && (
+            <div className="guide-box">
+              <h3>Common Tax Deductions in Ireland</h3>
+              <ul>
+                <li>
+                  <strong>Pension Contributions</strong>
+                  <p>Contributions to approved pension schemes are tax deductible, subject to age-related limits.</p>
+                </li>
+                <li>
+                  <strong>Medical Expenses</strong>
+                  <p>You can claim tax relief at the standard rate (20%) for qualifying medical expenses.</p>
+                </li>
+                <li>
+                  <strong>Work-Related Expenses</strong>
+                  <p>Certain expenses that are wholly, exclusively, and necessarily for work purposes.</p>
+                </li>
+                <li>
+                  <strong>Tuition Fees</strong>
+                  <p>Tax relief may be available for third-level education fees.</p>
+                </li>
+                <li>
+                  <strong>Rental Expenses</strong>
+                  <p>If you're a landlord, certain expenses related to renting property may be deductible.</p>
+                </li>
+              </ul>
+              <p className="guide-note">Note: This is a simplified guide. Please consult with a tax professional for advice specific to your situation.</p>
+            </div>
+          )}
+        </div>
+        
+        <div className="step-navigation">
+          <button type="button" className="prev-btn" onClick={prevStep}>
+            Previous: Income
+          </button>
+          <button type="button" className="next-btn" onClick={nextStep}>
+            Next: Tax Credits
+          </button>
+        </div>
+      </div>
+    );
+  };
+  
+  // Render step 3: Tax Credits
+  const renderStep3 = () => {
+    return (
+      <div className="step-content">
+        <h2>Step 3: Tax Credits</h2>
+        <p>Enter your eligible tax credits.</p>
+        
+        <div className="form-group">
+          <div className="label-with-help">
+            <label htmlFor="taxCredits">Tax Credits (€)</label>
+            <button 
+              type="button" 
+              className="help-btn" 
+              onClick={toggleTaxCreditsGuide}
+            >
+              {showTaxCreditsGuide ? 'Hide Guide' : 'Show Guide'}
+            </button>
+          </div>
+          
+          <input
+            type="number"
+            id="taxCredits"
+            name="taxCredits"
+            value={formData.taxCredits}
+            onChange={handleChange}
+            placeholder="Enter your tax credits"
+          />
+          
+          {showTaxCreditsGuide && (
+            <div className="guide-box">
+              <h3>Common Tax Credits in Ireland</h3>
+              <ul>
+                <li>
+                  <strong>Personal Tax Credit</strong>
+                  <p>€1,775 for single person (2023)</p>
+                </li>
+                <li>
+                  <strong>Employee Tax Credit (PAYE Credit)</strong>
+                  <p>€1,775 for PAYE employees (2023)</p>
+                </li>
+                <li>
+                  <strong>Earned Income Tax Credit</strong>
+                  <p>€1,775 for self-employed individuals (2023)</p>
+                </li>
+                <li>
+                  <strong>Home Carer Tax Credit</strong>
+                  <p>Up to €1,700 for married couples where one spouse cares for a dependent person (2023)</p>
+                </li>
+                <li>
+                  <strong>Single Person Child Carer Credit</strong>
+                  <p>€1,650 for single parents (2023)</p>
+                </li>
+                <li>
+                  <strong>Age Tax Credit</strong>
+                  <p>€245 if you or your spouse is 65 or over (2023)</p>
+                </li>
+              </ul>
+              <div className="tax-credit-calculator">
+                <h4>Estimated Tax Credits</h4>
+                <p>Based on common credits, a single PAYE employee would typically have:</p>
+                <ul>
+                  <li>Personal Tax Credit: €1,775</li>
+                  <li>Employee Tax Credit: €1,775</li>
+                  <li>Total: €3,550</li>
+                </ul>
+                <p className="guide-note">Note: This is a simplified guide. Please consult with a tax professional for advice specific to your situation.</p>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="step-navigation">
+          <button type="button" className="prev-btn" onClick={prevStep}>
+            Previous: Deductions
+          </button>
+          <button type="submit" className="submit-btn" disabled={loading || calculating}>
+            {loading ? 'Saving...' : 'Save Tax Information'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+  
   return (
     <div className="tax-form-container">
       <h1>Tax Form</h1>
-      <p>Fill out your tax information to get a real-time tax calculation.</p>
+      <p>Complete this form to calculate your Irish income tax.</p>
       
       <div className="tax-form-content">
+        <div className="step-indicator">
+          <div className={`step ${currentStep === 1 ? 'active' : currentStep > 1 ? 'completed' : ''}`}>
+            <div className="step-number">1</div>
+            <div className="step-label">Income</div>
+          </div>
+          <div className="step-line"></div>
+          <div className={`step ${currentStep === 2 ? 'active' : currentStep > 2 ? 'completed' : ''}`}>
+            <div className="step-number">2</div>
+            <div className="step-label">Deductions</div>
+          </div>
+          <div className="step-line"></div>
+          <div className={`step ${currentStep === 3 ? 'active' : ''}`}>
+            <div className="step-number">3</div>
+            <div className="step-label">Tax Credits</div>
+          </div>
+        </div>
+        
         <form onSubmit={handleSubmit} className="tax-form">
-          <div className="form-group">
-            <label htmlFor="income">Annual Income (€)</label>
-            <input
-              type="number"
-              id="income"
-              name="income"
-              value={formData.income}
-              onChange={handleChange}
-              placeholder="Enter your annual income"
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="deductions">Deductions (€)</label>
-            <input
-              type="number"
-              id="deductions"
-              name="deductions"
-              value={formData.deductions}
-              onChange={handleChange}
-              placeholder="Enter your deductions"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="taxCredits">Tax Credits (€)</label>
-            <input
-              type="number"
-              id="taxCredits"
-              name="taxCredits"
-              value={formData.taxCredits}
-              onChange={handleChange}
-              placeholder="Enter your tax credits"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="year">Tax Year</label>
-            <select
-              id="year"
-              name="year"
-              value={formData.year}
-              onChange={handleChange}
-            >
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-              <option value="2023">2023</option>
-            </select>
-          </div>
-          
-          <button type="submit" disabled={loading || calculating}>
-            {loading ? 'Saving...' : 'Save Tax Information'}
-          </button>
+          {currentStep === 1 && renderStep1()}
+          {currentStep === 2 && renderStep2()}
+          {currentStep === 3 && renderStep3()}
         </form>
         
         {(loading || calculating) && <LoadingSpinner />}

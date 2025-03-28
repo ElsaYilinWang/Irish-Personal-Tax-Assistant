@@ -13,6 +13,7 @@ import Register from './components/Register';
 import Profile from './components/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles/DocumentUpload.css';
+import './styles/TaxForm.css';
 
 function App() {
   return (
