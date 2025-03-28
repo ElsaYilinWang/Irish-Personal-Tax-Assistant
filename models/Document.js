@@ -8,9 +8,22 @@ const documentSchema = new mongoose.Schema({
   },
   documentType: {
     type: String,
+    required: true,
+    enum: ['Income', 'Expense', 'Receipt', 'Invoice', 'Statement', 'Tax Certificate', 'Other']
+  },
+  fileName: {
+    type: String,
     required: true
   },
-  url: {
+  fileSize: {
+    type: Number,
+    required: true
+  },
+  filePath: {
+    type: String,
+    required: true
+  },
+  fileType: {
     type: String,
     required: true
   },

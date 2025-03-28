@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
 const User = require('../models/User');
 const TaxReturn = require('../models/TaxReturn');
 const Document = require('../models/Document');
 const auth = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 /**
  * @route   GET /api/tax/calculate
@@ -248,7 +250,7 @@ router.delete('/return/:id', auth, async (req, res, next) => {
       });
     }
     
-    await taxReturn.remove();
+    await TaxReturn.deleteOne({ _id: req.params.id });
     
     res.status(200).json({ 
       success: true, 
@@ -321,15 +323,25 @@ router.get('/progress', auth, async (req, res, next) => {
  * @desc    Upload a tax-related document
  * @access  Private
  */
-router.post('/document', auth, async (req, res, next) => {
+router.post('/document', auth, upload.single('document'), async (req, res, next) => {
   try {
-    const { documentType, url } = req.body;
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    const { documentType } = req.body;
     
-    // Create new document
+    // Create new document with file information
     const document = new Document({
       userId: req.userId,
       documentType,
-      url
+      fileName: req.file.originalname,
+      fileSize: req.file.size,
+      filePath: req.file.path,
+      fileType: req.file.mimetype
     });
     
     await document.save();
@@ -337,7 +349,13 @@ router.post('/document', auth, async (req, res, next) => {
     res.status(201).json({ 
       success: true, 
       message: 'Document uploaded successfully', 
-      data: document 
+      data: {
+        id: document._id,
+        documentType: document.documentType,
+        fileName: document.fileName,
+        fileSize: document.fileSize,
+        uploadDate: document.createdAt
+      }
     });
   } catch (error) {
     next(error);
@@ -355,8 +373,44 @@ router.get('/documents', auth, async (req, res, next) => {
     
     res.status(200).json({ 
       success: true, 
-      data: documents 
+      data: documents.map(doc => ({
+        id: doc._id,
+        documentType: doc.documentType,
+        fileName: doc.fileName,
+        fileSize: doc.fileSize,
+        uploadDate: doc.createdAt
+      }))
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   GET /api/tax/document/:id
+ * @desc    Download a document
+ * @access  Private
+ */
+router.get('/document/:id', auth, async (req, res, next) => {
+  try {
+    const document = await Document.findById(req.params.id);
+    
+    if (!document) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Document not found' 
+      });
+    }
+    
+    // Ensure user can only access their own documents
+    if (document.userId.toString() !== req.userId.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Access denied. You can only access your own documents.' 
+      });
+    }
+    
+    res.download(document.filePath, document.fileName);
   } catch (error) {
     next(error);
   }
@@ -386,7 +440,14 @@ router.delete('/document/:id', auth, async (req, res, next) => {
       });
     }
     
-    await document.remove();
+    // Delete the file from the filesystem
+    const fs = require('fs');
+    if (fs.existsSync(document.filePath)) {
+      fs.unlinkSync(document.filePath);
+    }
+    
+    // Delete the document from the database
+    await Document.deleteOne({ _id: document._id });
     
     res.status(200).json({ 
       success: true, 

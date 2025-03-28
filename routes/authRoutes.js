@@ -51,10 +51,12 @@ router.post('/register', async (req, res, next) => {
           success: true,
           message: 'User registered successfully',
           token,
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email
+          data: {
+            user: {
+              id: user.id,
+              username: user.username,
+              email: user.email
+            }
           }
         });
       }
@@ -105,14 +107,48 @@ router.post('/login', async (req, res, next) => {
         res.json({
           success: true,
           token,
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email
+          data: {
+            user: {
+              id: user.id,
+              username: user.username,
+              email: user.email
+            }
           }
         });
       }
     );
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route   GET /api/auth/me
+ * @desc    Get current user data
+ * @access  Private
+ */
+router.get('/me', auth, async (req, res, next) => {
+  try {
+    // Get user data without password
+    const user = await User.findById(req.userId).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt
+      }
+    });
   } catch (error) {
     next(error);
   }
